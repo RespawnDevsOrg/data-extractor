@@ -22,8 +22,17 @@ jobs:
       run: |
         # Install Poppler for pdf2image
         choco install poppler --yes
-        # Install Tesseract OCR with Marathi language support
-        choco install tesseract --yes
+        
+        # Install Tesseract OCR from UB-Mannheim (includes more language packs)
+        $tesseractUrl = "https://github.com/UB-Mannheim/tesseract/releases/download/v5.3.3.20231005/tesseract-ocr-w64-setup-5.3.3.20231005.exe"
+        $tesseractInstaller = "$env:TEMP\tesseract-installer.exe"
+        
+        # Download Tesseract installer
+        Invoke-WebRequest -Uri $tesseractUrl -OutFile $tesseractInstaller
+        
+        # Install Tesseract silently with all language packs
+        Start-Process -FilePath $tesseractInstaller -ArgumentList "/S" -Wait
+        
         # Add Tesseract to PATH
         echo "C:\Program Files\Tesseract-OCR" >> $GITHUB_PATH
         
