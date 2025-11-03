@@ -10,11 +10,19 @@ Extract voter information from Marathi PDF files and export to Excel with high a
 - ✅ **Progress tracking** - Real-time progress bars and status updates
 - ✅ **Handles malformed IDs** - Automatically cleans OCR errors in voter IDs
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 - ✅ **Web Interface** - Modern, user-friendly web UI for easy PDF processing
 - ✅ **Background Processing** - Asynchronous processing with real-time status updates
 - ✅ **Download Ready** - Processed Excel files ready for download
 >>>>>>> f8e8f2b (changes for showing table/filtering)
+=======
+- ✅ **Web Interface** - Modern, user-friendly web UI for easy PDF processing
+- ✅ **Background Processing** - Asynchronous processing with real-time status updates
+- ✅ **Download Ready** - Processed Excel files ready for download
+=======
+>>>>>>> b3e6614 (added readme)
+>>>>>>> dbc1894 (added readme)
 
 ## Prerequisites
 
@@ -79,9 +87,12 @@ pip install -r requirements.txt
 ## Usage
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ### Basic Usage
 
 =======
+=======
+>>>>>>> dbc1894 (added readme)
 ### Web Interface (Recommended)
 
 The easiest way to use this tool is through the web interface:
@@ -109,12 +120,20 @@ The web interface provides:
 ### Command Line Usage
 
 **Basic Usage:**
+<<<<<<< HEAD
 >>>>>>> f8e8f2b (changes for showing table/filtering)
+=======
+=======
+### Basic Usage
+
+>>>>>>> b3e6614 (added readme)
+>>>>>>> dbc1894 (added readme)
 ```bash
 source venv/bin/activate  # Activate virtual environment first
 python voter_list_ocr.py <pdf_file> [output_file.xlsx]
 ```
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 ### Examples
 
@@ -124,25 +143,49 @@ python voter_list_ocr.py <pdf_file> [output_file.xlsx]
 
 Process a PDF with automatic output filename:
 >>>>>>> f8e8f2b (changes for showing table/filtering)
+=======
+**Examples:**
+
+Process a PDF with automatic output filename:
+=======
+### Examples
+
+**Process a PDF with automatic output filename:**
+>>>>>>> b3e6614 (added readme)
+>>>>>>> dbc1894 (added readme)
 ```bash
 python voter_list_ocr.py "Voter List.pdf"
 # Creates: Voter List_voters.xlsx
 ```
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 **Specify custom output filename:**
 =======
 Specify custom output filename:
 >>>>>>> f8e8f2b (changes for showing table/filtering)
+=======
+Specify custom output filename:
+=======
+**Specify custom output filename:**
+>>>>>>> b3e6614 (added readme)
+>>>>>>> dbc1894 (added readme)
 ```bash
 python voter_list_ocr.py "Voter List.pdf" output.xlsx
 ```
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 **Process the main PDF:**
 =======
 Process the main PDF:
 >>>>>>> f8e8f2b (changes for showing table/filtering)
+=======
+Process the main PDF:
+=======
+**Process the main PDF:**
+>>>>>>> b3e6614 (added readme)
+>>>>>>> dbc1894 (added readme)
 ```bash
 python voter_list_ocr.py main_pdf.pdf main_output.xlsx
 ```
