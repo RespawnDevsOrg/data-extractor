@@ -196,46 +196,109 @@ class VoterListOCR:
         lines = text.split('\n')
         
         # Find all voter IDs with their positions
-        voter_id_pattern = r'(?:[A-Z5५$॥S]|5५)[A-Z5५M॥६४$0-9][A-ZF६८॥0-9][0-9SMFOI]{7}'
+        # Enhanced pattern to catch malformed IDs with Devanagari chars and OCR errors
+        # Matches: [S/5/$/॥/s/m][M/॥/५/0/m/e][F/6/4/०/॥/r/f] followed by 7-10 digit-like characters
+        # Allow ॥ and lowercase letters since OCR can produce 'smf' instead of 'SMF'
+        # Allow all Devanagari numerals (०-९) throughout the ID
+        voter_id_pattern = r'[A-Za-z5५$॥S][A-Za-z5५M॥६४$0-9०-९][A-Za-zF६८४॥०-९0-9][A-Za-z0-9०-९SMFOI॥]{7,10}'
         voter_entries = []
-        
+
         for i, line in enumerate(lines):
             # Find all voter IDs in this line
             matches = list(re.finditer(voter_id_pattern, line))
-            
+
             for match in matches:
-                voter_id = match.group()
-                
+                voter_id = match.group()  # Use full match since we removed capturing group
+
                 # Clean up OCR errors in voter ID
+                # Step 0: Convert to uppercase (OCR sometimes produces lowercase 'smf')
+                voter_id = voter_id.upper()
+
+                # Step 1: First convert ALL Devanagari numerals to English (including ones in middle of ID)
                 voter_id = self.convert_marathi_numbers_to_english(voter_id)
+
+                # Step 2: Clean up common OCR character misrecognitions
                 voter_id = (voter_id.replace('$', 'S').replace('॥', 'M')
                            .replace('le', '').replace('Ig', '').replace('log', '')
-                           .replace('5५', 'SM'))
+                           .replace('०', '0'))  # Extra Devanagari zero handling
 
-                # Fix the prefix
+                # Step 3: Handle specific multi-character prefix patterns
+                # These are common OCR errors for 'SMF' prefix
+                if voter_id.startswith('5५'):
+                    voter_id = 'SM' + voter_id[2:]
+                elif voter_id.startswith('$M'):
+                    voter_id = 'SM' + voter_id[2:]
+                elif voter_id.startswith('SM'):
+                    pass  # Already correct
+                elif voter_id.startswith('5M'):
+                    voter_id = 'SM' + voter_id[2:]
+                elif voter_id.startswith('507') or voter_id.startswith('506') or voter_id.startswith('508'):
+                    # 507/506/508 are OCR errors for 'SMF' (7/6/8 misread as F)
+                    voter_id = 'SMF' + voter_id[3:]
+                elif voter_id.startswith('571') or voter_id.startswith('576'):
+                    # 571/576 are OCR errors for 'SMF'
+                    voter_id = 'SMF' + voter_id[3:]
+                elif voter_id.startswith('50') and len(voter_id) > 2 and voter_id[2] in '67890':
+                    # 50 followed by digit likely means 'SMF' with a digit after
+                    voter_id = 'SMF' + voter_id[2:]
+
+                # Fix the prefix - character by character approach
                 if len(voter_id) >= 10:
+                    # Handle cases where first 2 chars need fixing
                     if voter_id[:2] in ['55', '5S', 'S5']:
                         voter_id = 'SM' + voter_id[2:]
+                    elif voter_id[:2] in ['SM']:
+                        pass  # Correct prefix start
+                    elif voter_id[0] in '5$':
+                        voter_id = 'S' + voter_id[1:]
 
-                    char1 = voter_id[0]
-                    char2 = voter_id[1]
-                    char3 = voter_id[2]
+                    # Now fix individual prefix characters
+                    char1 = voter_id[0] if len(voter_id) > 0 else ''
+                    char2 = voter_id[1] if len(voter_id) > 1 else ''
+                    char3 = voter_id[2] if len(voter_id) > 2 else ''
 
+                    # First character should be 'S'
                     if char1 in '5485$':
                         char1 = 'S'
-                    if char2 in 'S86$564':
+
+                    # Second character should be 'M'
+                    if char2 in 'S86$5640':
                         char2 = 'M'
-                    if char3 in 'M8676':
+
+                    # Third character should be 'F' or 'M' (for SMM type IDs)
+                    if char3 in 'M8676C':
+                        char3 = 'F'
+                    elif char3 in '410':
+                        char3 = 'F'
+                    elif char3 in '7':
+                        # 7 is often misread F
                         char3 = 'F'
 
                     prefix = char1 + char2 + char3
 
+                    # Clean the numeric digits (last 7 characters)
                     digits = voter_id[3:]
+                    # Only replace letters that look like numbers, keep actual digits
+                    # Also remove any remaining ॥ characters from digits
                     digits = (digits.replace('S', '5').replace('O', '0').replace('I', '1')
-                             .replace('l', '1').replace('Z', '2').replace('F', '6')
-                             .replace('B', '8').replace('G', '6'))
+                             .replace('l', '1').replace('Z', '2')
+                             .replace('B', '8').replace('C', '6').replace('G', '6')
+                             .replace('॥', ''))  # Remove Devanagari pipes from digit section
+                    # Don't replace 'F' with '6' in digits - F in position 3 is already handled
 
                     voter_id = prefix + digits
+
+                # Final validation: ensure it's exactly 10 characters
+                if len(voter_id) != 10:
+                    # Skip or try to fix if too long/short
+                    if len(voter_id) > 10:
+                        # If too long, check if there are extra 'M' characters in prefix
+                        if voter_id.startswith('SMM') or voter_id.startswith('SMFM'):
+                            voter_id = 'SMF' + voter_id[4:11]
+                        elif voter_id.startswith('SM'):
+                            voter_id = voter_id[:10]
+                    elif len(voter_id) < 10:
+                        continue  # Skip IDs that are too short
                 
                 # Try to find house number
                 house_num = ''
