@@ -10,5 +10,5 @@
 //  intellectual property of Respawn Devs. Any attempt to reverse-engineer,
 //  decompile, or redistribute the Software is a violation of applicable laws.
 //
-//  For licensing or partnership inquiries, contact: legal@respawndevs.com
+//  For licensing or partnership inquiries, contact: respawndevs@gmail.com
 // ============================================================================ 
