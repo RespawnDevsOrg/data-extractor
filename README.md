@@ -9,6 +9,12 @@ Extract voter information from Marathi PDF files and export to Excel with high a
 - ✅ **Incremental saving** - Data saved page-by-page to prevent data loss
 - ✅ **Progress tracking** - Real-time progress bars and status updates
 - ✅ **Handles malformed IDs** - Automatically cleans OCR errors in voter IDs
+<<<<<<< HEAD
+=======
+- ✅ **Web Interface** - Modern, user-friendly web UI for easy PDF processing
+- ✅ **Background Processing** - Asynchronous processing with real-time status updates
+- ✅ **Download Ready** - Processed Excel files ready for download
+>>>>>>> f8e8f2b (changes for showing table/filtering)
 
 ## Prerequisites
 
@@ -72,27 +78,71 @@ pip install -r requirements.txt
 
 ## Usage
 
+<<<<<<< HEAD
 ### Basic Usage
 
+=======
+### Web Interface (Recommended)
+
+The easiest way to use this tool is through the web interface:
+
+1. **Start the web server:**
+   ```bash
+   source venv/bin/activate
+   python app.py
+   ```
+
+2. **Open your browser:**
+   Navigate to `http://localhost:8080`
+
+3. **Upload and process:**
+   - Click "Choose File" or drag and drop a PDF file
+   - Wait for processing to complete
+   - Download the generated Excel file
+
+The web interface provides:
+- Drag-and-drop file upload
+- Real-time progress tracking
+- Automatic file processing
+- Direct Excel file download
+
+### Command Line Usage
+
+**Basic Usage:**
+>>>>>>> f8e8f2b (changes for showing table/filtering)
 ```bash
 source venv/bin/activate  # Activate virtual environment first
 python voter_list_ocr.py <pdf_file> [output_file.xlsx]
 ```
 
+<<<<<<< HEAD
 ### Examples
 
 **Process a PDF with automatic output filename:**
+=======
+**Examples:**
+
+Process a PDF with automatic output filename:
+>>>>>>> f8e8f2b (changes for showing table/filtering)
 ```bash
 python voter_list_ocr.py "Voter List.pdf"
 # Creates: Voter List_voters.xlsx
 ```
 
+<<<<<<< HEAD
 **Specify custom output filename:**
+=======
+Specify custom output filename:
+>>>>>>> f8e8f2b (changes for showing table/filtering)
 ```bash
 python voter_list_ocr.py "Voter List.pdf" output.xlsx
 ```
 
+<<<<<<< HEAD
 **Process the main PDF:**
+=======
+Process the main PDF:
+>>>>>>> f8e8f2b (changes for showing table/filtering)
 ```bash
 python voter_list_ocr.py main_pdf.pdf main_output.xlsx
 ```

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voter List OCR - PDF Data Extractor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📄 Voter List OCR Scanner</h1>
+            <p class="subtitle">Extract voter data from Marathi PDF files</p>
+        </header>
+
+        <main>
+            <!-- Upload Section -->
+            <div class="upload-section" id="uploadSection">
+                <!-- Language Selection -->
+                <div class="language-section">
+                    <h3>Select Language / भाषा निवडा</h3>
+                    <div class="language-options">
+                        <label class="language-option">
+                            <input type="radio" name="language" value="marathi" checked>
+                            <span class="language-label">मराठी (Marathi)</span>
+                        </label>
+                        <label class="language-option disabled" title="Coming Soon">
+                            <input type="radio" name="language" value="english" disabled>
+                            <span class="language-label">English (Coming Soon)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="upload-box" id="uploadBox">
+                    <div class="upload-icon">📤</div>
+                    <h2>Upload PDF File</h2>
+                    <p>Drag and drop your PDF file here, or click to browse</p>
+                    <input type="file" id="fileInput" accept=".pdf" hidden>
+                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                        Choose File
+                    </button>
+                    <p class="file-info" id="fileInfo"></p>
+                </div>
+            </div>
+
+            <!-- Configuration Section (After Upload, Before Processing) -->
+            <div class="configuration-section hidden" id="configurationSection">
+                <h2>Configure Processing / प्रक्रिया कॉन्फिगर करा</h2>
+
+                <!-- User Input Fields -->
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="matadaarSangh">मतदार संघ (Matadar Sangh) *</label>
+                        <input type="text" id="matadaarSangh" class="form-input" placeholder="Enter Matadar Sangh" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="electionType">Election Type *</label>
+                        <input type="text" id="electionType" class="form-input" placeholder="Enter Election Type" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="wardNumber">भाग क्रमांक (Ward Number) *</label>
+                        <input type="text" id="wardNumber" class="form-input" placeholder="Enter Ward Number" required>
+                    </div>
+                </div>
+
+                <!-- PDF Preview Section -->
+                <div class="preview-section">
+                    <h3>PDF Preview / पीडीएफ पूर्वावलोकन</h3>
+                    <div class="preview-loading" id="previewLoading">
+                        <span class="loading-spinner">⏳</span>
+                        <p>Generating page previews...</p>
+                    </div>
+                    <div class="preview-container hidden" id="previewContainer">
+                        <div class="preview-gallery" id="previewGallery">
+                            <!-- Thumbnails will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page Range Selection -->
+                <div class="page-range-section">
+                    <h3>Select Page Range / पृष्ठ श्रेणी निवडा</h3>
+                    <div class="page-range-inputs">
+                        <div class="form-group">
+                            <label for="startPage">Start Page</label>
+                            <input type="number" id="startPage" class="form-input" min="1" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="endPage">End Page</label>
+                            <input type="number" id="endPage" class="form-input" min="1" value="1">
+                        </div>
+                        <div class="page-range-info">
+                            <p id="pageRangeInfo">Processing <span id="pageCount">0</span> pages</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Start Processing Button -->
+                <div class="config-actions">
+                    <button class="btn btn-success btn-large" id="startProcessingBtn">🚀 Start Processing</button>
+                    <button class="btn btn-secondary" id="cancelConfigBtn">← Back to Upload</button>
+                </div>
+            </div>
+
+            <!-- Processing Section -->
+            <div class="processing-section hidden" id="processingSection">
+                <h2>Processing Your File</h2>
+                <div class="status-card">
+                    <div class="status-header">
+                        <span class="status-icon" id="statusIcon">⏳</span>
+                        <span class="status-text" id="statusText">Uploading...</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">0%</p>
+                    <p class="message-text" id="messageText">Initializing...</p>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section hidden" id="resultsSection">
+                <div class="success-card">
+                    <div class="success-icon">✅</div>
+                    <h2>Processing Complete!</h2>
+                    <div class="result-info">
+                        <p><strong>File:</strong> <span id="resultFilename"></span></p>
+                        <p><strong>Total Records:</strong> <span id="resultRecords"></span></p>
+                        <p><strong>Showing:</strong> <span id="filteredRecords"></span> records</p>
+                    </div>
+
+                    <!-- Data Table -->
+                    <div class="table-container">
+                        <div class="table-controls">
+                            <button class="btn btn-success" id="downloadBtn">📥 Download Excel</button>
+                            <button class="btn btn-secondary" id="clearFiltersBtn">🔄 Clear Filters</button>
+                            <button class="btn btn-secondary" id="resetBtn">📄 Process Another File</button>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table id="dataTable" class="data-table">
+                                <thead>
+                                    <tr id="tableHeaders"></tr>
+                                    <tr id="tableFilters"></tr>
+                                </thead>
+                                <tbody id="tableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Section -->
+            <div class="error-section hidden" id="errorSection">
+                <div class="error-card">
+                    <div class="error-icon">❌</div>
+                    <h2>Error Occurred</h2>
+                    <p class="error-message" id="errorMessage"></p>
+                    <button class="btn btn-secondary" onclick="resetForm()">Try Again</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Voter List OCR Scanner - Powered by Tesseract OCR</p>
+        </footer>
+    </div>
+
+    <!-- Full-size Image Modal -->
+    <div class="modal hidden" id="imageModal">
+        <div class="modal-overlay" id="modalOverlay"></div>
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose">✕</button>
+            <div class="modal-image-container">
+                <img id="modalImage" src="" alt="Full-size preview">
+                <p class="modal-page-info" id="modalPageInfo">Page 1</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+

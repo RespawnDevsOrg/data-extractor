@@ -22,13 +22,17 @@ from openpyxl import Workbook
 class VoterListOCR:
     """Main class for processing Marathi voter list PDFs"""
 
-    def __init__(self, pdf_path: str, output_path: Optional[str] = None):
+    def __init__(self, pdf_path: str, output_path: Optional[str] = None,
+                 matadaar_sangh: str = '', election_type: str = '', ward_number: str = ''):
         """
         Initialize the OCR processor
 
         Args:
             pdf_path: Path to the PDF file to process
             output_path: Path for output Excel file
+            matadaar_sangh: Matadar Sangh value (user input)
+            election_type: Election Type value (user input)
+            ward_number: Ward Number value (user input)
         """
         self.pdf_path = Path(pdf_path)
         if not self.pdf_path.exists():
@@ -39,9 +43,14 @@ class VoterListOCR:
             self.output_path = Path(output_path)
         else:
             self.output_path = Path(self.pdf_path.stem + '_voters.xlsx')
-        
+
         self.voters_data = []
         self.total_records_saved = 0
+
+        # Store user configuration
+        self.matadaar_sangh = matadaar_sangh
+        self.election_type = election_type
+        self.ward_number = ward_number
 
         # Devanagari to English number mapping
         self.devanagari_to_english = {
@@ -78,15 +87,30 @@ class VoterListOCR:
         wb = Workbook()
         ws = wb.active
         ws.title = "Voter Data"
-        
-        # Write headers
-        headers = ['Sr.No', 'Voter ID', 'नाव', 'वडिलांचे नाव', 'ColumnX', 'घर क्रमांक', 'वय', 'लिंग']
+
+        # Write headers - Updated with new column order
+        headers = [
+            'Sr.No',
+            'Voter ID',
+            'नाव',
+            'वडिलांचे नाव',
+            'ColumnX',
+            'घर क्रमांक',
+            'वय',
+            'लिंग',
+            'मतदार संघ',  # User input
+            'Election Type',  # User input
+            'भाग क्रमांक',  # User input (Ward Number)
+            'मतदार संघ २',  # From ColumnX split (part 1)
+            'यादी क्रमांक',  # From ColumnX split (part 2)
+            'यादी अनु. क्र.'  # From ColumnX split (part 3)
+        ]
         ws.append(headers)
-        
+
         # Save initial file
         wb.save(self.output_path)
         wb.close()
-        
+
         print(f"✓ Excel file initialized: {self.output_path.name}")
     
     def append_voters_to_excel(self, voters: List[Dict[str, str]]):
@@ -104,7 +128,7 @@ class VoterListOCR:
             wb = openpyxl.load_workbook(self.output_path)
             ws = wb.active
             
-            # Append each voter record
+            # Append each voter record with new column order
             for voter in voters:
                 row = [
                     voter.get('Sr.No', ''),
@@ -114,10 +138,16 @@ class VoterListOCR:
                     voter.get('ColumnX', ''),
                     voter.get('घर क्रमांक', ''),
                     voter.get('वय', ''),
-                    voter.get('लिंग', '')
+                    voter.get('लिंग', ''),
+                    voter.get('मतदार संघ', ''),  # User input
+                    voter.get('Election Type', ''),  # User input
+                    voter.get('भाग क्रमांक', ''),  # User input
+                    voter.get('मतदार संघ २', ''),  # From ColumnX split
+                    voter.get('यादी क्रमांक', ''),  # From ColumnX split
+                    voter.get('यादी अनु. क्र.', '')  # From ColumnX split
                 ]
                 ws.append(row)
-            
+
             # Save workbook
             wb.save(self.output_path)
             wb.close()
@@ -135,24 +165,38 @@ class VoterListOCR:
             except:
                 pass
         
-    def extract_text_from_pdf(self, dpi: int = 300) -> List[str]:
+    def extract_text_from_pdf(self, dpi: int = 300, start_page: int = None, end_page: int = None) -> List[str]:
         """
         Convert PDF pages to images and extract text using OCR
-        
+
         Args:
             dpi: Resolution for PDF to image conversion (higher = better quality but slower)
-            
+            start_page: Starting page number (1-indexed), None means start from page 1
+            end_page: Ending page number (1-indexed), None means process till last page
+
         Returns:
             List of extracted text from each page
         """
         print(f"\n{'='*70}")
-        print(f"STEP 1: Converting PDF to Images (DPI: {dpi})")
+        if start_page or end_page:
+            print(f"STEP 1: Converting PDF to Images (DPI: {dpi}, Pages: {start_page or 1}-{end_page or 'end'})")
+        else:
+            print(f"STEP 1: Converting PDF to Images (DPI: {dpi})")
         print(f"{'='*70}")
-        
+
         start_time = datetime.now()
-        images = convert_from_path(self.pdf_path, dpi=dpi)
+        # Use first_page and last_page parameters of pdf2image
+        images = convert_from_path(
+            self.pdf_path,
+            dpi=dpi,
+            first_page=start_page if start_page else None,
+            last_page=end_page if end_page else None,
+            use_cropbox=True,
+            thread_count=5
+        )
+
         conversion_time = (datetime.now() - start_time).total_seconds()
-        
+
         total_pages = len(images)
         print(f"✓ Converted {total_pages} pages in {conversion_time:.1f}s")
         
@@ -317,15 +361,34 @@ class VoterListOCR:
         
         # Process each voter entry
         for idx, entry_info in enumerate(voter_entries):
+            # Split ColumnX (house_num) into three parts: 217/134/537
+            matadaar_sangh_2 = ''
+            yadi_number = ''
+            yadi_sr_no = ''
+
+            if entry_info['house_num']:
+                # Try to split the 217/134/537 format
+                parts = entry_info['house_num'].split('/')
+                if len(parts) == 3:
+                    matadaar_sangh_2 = parts[0]  # 217
+                    yadi_number = parts[1]  # 134
+                    yadi_sr_no = parts[2]  # 537
+
             voter = {
-                'Sr.No': '',
+                'Sr.No': yadi_sr_no,  # Use third part as Sr.No (537)
                 'Voter ID': entry_info['voter_id'],
                 'नाव': '',
                 'वडिलांचे नाव': '',
-                'ColumnX': entry_info['house_num'],
+                'ColumnX': entry_info['house_num'],  # Keep original format (217/134/537)
                 'घर क्रमांक': '',
                 'वय': '',
-                'लिंग': ''
+                'लिंग': '',
+                'मतदार संघ': self.matadaar_sangh,  # User input
+                'Election Type': self.election_type,  # User input
+                'भाग क्रमांक': self.ward_number,  # User input
+                'मतदार संघ २': matadaar_sangh_2,  # From ColumnX split (217)
+                'यादी क्रमांक': yadi_number,  # From ColumnX split (134)
+                'यादी अनु. क्र.': yadi_sr_no  # From ColumnX split (537)
             }
             
             # Get context lines
@@ -339,43 +402,37 @@ class VoterListOCR:
             context_text = '\n'.join(context_lines)
             
             # Extract details from context
-            self._extract_voter_details_from_context(context_text, voter, entry_info['voter_id'])
+            self._extract_voter_details_from_context(context_text, voter, entry_info['voter_id'], entry_info['house_num'])
             voters.append(voter)
-        
+
         return voters
-    
-    def _extract_voter_details_from_context(self, context: str, voter: Dict[str, str], voter_id: str = ''):
+
+    def _extract_voter_details_from_context(self, context: str, voter: Dict[str, str], voter_id: str = '', house_num: str = ''):
         """
         Extract detailed voter information from context text.
         Handles columnar layout where 3 voters appear side-by-side.
-        
+
         Args:
             context: Context text containing voter information
             voter: Dictionary to populate with voter details
             voter_id: The voter ID to help locate relevant information
+            house_num: The house number pattern (217/134/537) to help locate voter column
         """
         lines = context.split('\n')
-        
-        columnx_value = voter.get('ColumnX', '')
+
         voter_column = 0
         voter_id_line = ''
-        
-        # Find the line containing ColumnX patterns
+
+        # Find the line containing house number patterns to determine voter column
         for line in lines:
-            if columnx_value and columnx_value in line:
+            if house_num and house_num in line:
                 voter_id_line = line
-                columnx_matches = list(re.finditer(r'\d+/\d+/\d+', line))
-                for i, match in enumerate(columnx_matches):
-                    if match.group() == columnx_value:
+                house_matches = list(re.finditer(r'\d+/\d+/\d+', line))
+                for i, match in enumerate(house_matches):
+                    if match.group() == house_num:
                         voter_column = i
                         break
                 break
-        
-        # Extract serial number from ColumnX
-        if columnx_value:
-            parts = columnx_value.split('/')
-            if len(parts) == 3:
-                voter['Sr.No'] = parts[2]
         
         # Extract voter name
         for line in lines:
