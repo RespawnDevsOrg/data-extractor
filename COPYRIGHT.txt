@@ -1,0 +1,14 @@
+// ============================================================================
+//  Copyright (c) 2025 Respawn Devs. All rights reserved.
+//
+//  This software and associated documentation files (the "Software") are
+//  proprietary to Respawn Devs. Unauthorized copying, modification,
+//  distribution, or use of this software, in whole or in part, is strictly
+//  prohibited without the express written permission of Respawn Devs.
+//
+//  NOTICE: All source code, logic, and associated assets are the confidential
+//  intellectual property of Respawn Devs. Any attempt to reverse-engineer,
+//  decompile, or redistribute the Software is a violation of applicable laws.
+//
+//  For licensing or partnership inquiries, contact: legal@respawndevs.com
+// ============================================================================ 
