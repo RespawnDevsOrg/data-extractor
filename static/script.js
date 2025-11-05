@@ -9,6 +9,7 @@ let columnFilters = {};
 let currentFile = null;
 let pdfTotalPages = 0;
 let selectedLanguage = 'marathi';
+let hasDownloadedExcel = false; // Track if user has downloaded Excel file
 
 // DOM Elements
 const uploadSection = document.getElementById('uploadSection');
@@ -38,11 +39,25 @@ function setupEventListeners() {
     // File input change
     fileInput.addEventListener('change', handleFileSelect);
 
+    // Choose file button - prevent event bubbling
+    const chooseFileBtn = document.getElementById('chooseFileBtn');
+    if (chooseFileBtn) {
+        chooseFileBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent uploadBox click handler
+            fileInput.click();
+        });
+    }
+
     // Drag and drop
     uploadBox.addEventListener('dragover', handleDragOver);
     uploadBox.addEventListener('dragleave', handleDragLeave);
     uploadBox.addEventListener('drop', handleDrop);
-    uploadBox.addEventListener('click', () => fileInput.click());
+    uploadBox.addEventListener('click', (event) => {
+        // Only trigger if not clicking the button
+        if (event.target !== chooseFileBtn && !chooseFileBtn.contains(event.target)) {
+            fileInput.click();
+        }
+    });
 
     // Download button
     downloadBtn.addEventListener('click', downloadFile);
@@ -363,6 +378,16 @@ function startStatusPolling() {
     }, 2000); // Check every 2 seconds
 }
 
+// Helper function to format time
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins > 0) {
+        return `${mins}m ${secs}s`;
+    }
+    return `${secs}s`;
+}
+
 // Update status display
 function updateStatus(status, progress, message, fullStatus = {}) {
     const statusIcon = document.getElementById('statusIcon');
@@ -370,7 +395,7 @@ function updateStatus(status, progress, message, fullStatus = {}) {
     const progressBar = document.getElementById('progressBar');
     const progressText = document.getElementById('progressText');
     const messageText = document.getElementById('messageText');
-    
+
     // Update icon based on status
     if (status === 'uploading') {
         statusIcon.textContent = '📤';
@@ -382,11 +407,23 @@ function updateStatus(status, progress, message, fullStatus = {}) {
         statusIcon.textContent = '✅';
         statusText.textContent = 'Completed';
     }
-    
-    // Update progress
+
+    // Update progress with elapsed time
     progressBar.style.width = `${progress}%`;
-    progressText.textContent = `${progress}%`;
-    messageText.textContent = message;
+
+    // Add elapsed time to progress text if available
+    let progressDisplay = `${Math.round(progress)}%`;
+    if (fullStatus.elapsed_time !== undefined && fullStatus.elapsed_time > 0) {
+        progressDisplay += ` | Time: ${formatTime(fullStatus.elapsed_time)}`;
+    }
+    progressText.textContent = progressDisplay;
+
+    // Add accuracy to message if completed
+    let displayMessage = message;
+    if (status === 'completed' && fullStatus.accuracy !== undefined) {
+        displayMessage += ` | Accuracy: ${fullStatus.accuracy}%`;
+    }
+    messageText.textContent = displayMessage;
 }
 
 // Show results
@@ -394,10 +431,30 @@ async function showResults(status) {
     document.getElementById('resultFilename').textContent = status.filename || 'Unknown';
     document.getElementById('resultRecords').textContent = status.total_records || 0;
 
+    // Reset download status for new results
+    hasDownloadedExcel = false;
+    updateResetButtonState();
+
     // Fetch and display table data
     await fetchTableData();
 
     showSection('results');
+}
+
+// Update reset button state based on download status
+function updateResetButtonState() {
+    const resetBtn = document.getElementById('resetBtn');
+    if (hasDownloadedExcel) {
+        resetBtn.disabled = false;
+        resetBtn.classList.remove('btn-disabled');
+        resetBtn.title = 'Process another file';
+        resetBtn.innerHTML = '📄 Process Another File';
+    } else {
+        resetBtn.disabled = true;
+        resetBtn.classList.add('btn-disabled');
+        resetBtn.title = 'Please download the Excel file first';
+        resetBtn.innerHTML = '🔒 Download Excel First';
+    }
 }
 
 // Fetch table data from server
@@ -671,6 +728,20 @@ async function downloadFile() {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
+
+            // Mark as downloaded and enable reset button
+            hasDownloadedExcel = true;
+            updateResetButtonState();
+            
+            // Show success message
+            const downloadBtn = document.getElementById('downloadBtn');
+            const originalText = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = '✅ Downloaded!';
+            downloadBtn.style.background = '#28a745';
+            setTimeout(() => {
+                downloadBtn.innerHTML = originalText;
+                downloadBtn.style.background = '';
+            }, 2000);
         } else {
             const error = await response.json();
             showError(error.error || 'Download failed');
@@ -720,6 +791,12 @@ function showSection(section) {
 
 // Reset form
 function resetForm() {
+    // Check if download is required and hasn't been done
+    if (!hasDownloadedExcel && tableData.length > 0) {
+        alert('Please download the Excel file before processing another file.');
+        return;
+    }
+
     currentJobId = null;
     currentFile = null;
     pdfTotalPages = 0;
@@ -730,6 +807,7 @@ function resetForm() {
     sortColumn = null;
     sortDirection = 'asc';
     columnFilters = {};
+    hasDownloadedExcel = false; // Reset download status
 
     // Clear configuration form
     document.getElementById('matadaarSangh').value = '';

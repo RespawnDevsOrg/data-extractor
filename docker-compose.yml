@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  voter-ocr-app:
+    build: .
+    container_name: voter-ocr-scanner
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+      - ./voter_ocr_app.log:/app/voter_ocr_app.log
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

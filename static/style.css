@@ -201,6 +201,19 @@ main {
     transform: translateY(-2px);
 }
 
+.btn-disabled {
+    background: #6c757d !important;
+    color: #adb5bd !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+.btn-disabled:hover {
+    background: #6c757d !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
 /* Processing Section */
 .processing-section {
     animation: fadeIn 0.5s ease-in;
@@ -416,10 +429,15 @@ footer {
     border-radius: 15px;
     padding: 30px;
     margin-bottom: 30px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
 }
 
 .form-group {
     margin-bottom: 20px;
+    flex: 1;
+    min-width: 250px;
 }
 
 .form-group label {
